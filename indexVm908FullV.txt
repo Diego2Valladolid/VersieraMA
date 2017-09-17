@@ -1,0 +1,214 @@
+﻿<html>
+  <head>
+    <meta name="description" content="Maria Gaetana Agnesi's Versiera (aka Witch) meets arcs.">
+    <meta name="description" content="A mathematical meditation on breast geometry.">
+    <meta name="version" content="9.05">
+    <meta name="keywords" content="HTML,JavaScript,Python,SageMathCell,Geometry,Breast">
+    <meta name="author" content="Floozman">
+    <meta name="credit" content="circle-cirlcle intersection by Xaedes (Github)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+
+    <title> VmA </title>
+    <script src="https://sagecell.sagemath.org/static/embedded_sagecell.js"></script>
+    <script>
+    // Make the div with id 'mycell' a Sage cell
+    sagecell.makeSagecell({inputLocation:  '#mycell',
+                           template:       sagecell.templates.minimal,
+                           evalButtonText: 'Let there be breasts !'});
+   
+    </script>
+  </head>
+  <body>
+  <h2> Versiera meets arcs </h2>
+  Click the button below to make Maria Gaetana Agnesi's Versiera and arcs meet in beauty
+    <div id="mycell"><script type="text/x-sage">
+
+from __future__ import division
+import numpy as np
+import scipy.optimize
+
+"""
+circle-circle intersection 
+credit: Xaedes (Github)
+"""
+
+#!/usr/bin/env python2
+#-*- coding: utf-8 -*-
+#from __future__ import division
+#import numpy as np
+from math import cos, sin, pi, sqrt, atan2
+d2r = pi/180
+
+class Geometry(object):
+
+    def circle_intersection(self, circle1, circle2):
+        '''
+        @summary: calculates intersection points of two circles
+        @param circle1: tuple(x,y,radius)
+        @param circle2: tuple(x,y,radius)
+        @result: tuple of intersection points (which are (x,y) tuple)
+        '''
+        # return self.circle_intersection_sympy(circle1,circle2)
+        x1,y1,r1 = circle1
+        x2,y2,r2 = circle2
+        # http://stackoverflow.com/a/3349134/798588
+        dx,dy = x2-x1,y2-y1
+        d = sqrt(dx*dx+dy*dy)
+        if d > r1+r2:
+            print "#1"
+            return None # no solutions, the circles are separate
+        if d < abs(r1-r2):
+            print "#2"
+            return None # no solutions because one circle is contained within the other
+        if d == 0 and r1 == r2:
+            print "#3"
+            return None # circles are coincident and there are an infinite number of solutions
+
+        a = (r1*r1-r2*r2+d*d)/(2*d)
+        h = sqrt(r1*r1-a*a)
+        xm = x1 + a*dx/d
+        ym = y1 + a*dy/d
+        xs1 = xm + h*dy/d
+        xs2 = xm - h*dy/d
+        ys1 = ym - h*dx/d
+        ys2 = ym + h*dx/d
+
+        return (xs1,ys1),(xs2,ys2)
+
+    def circle_intersection_sympy(self, circle1, circle2):
+        from sympy.geometry import Circle, Point
+        x1,y1,r1 = circle1
+        x2,y2,r2 = circle2
+        c1=Circle(Point(x1,y1),r1)
+        c2=Circle(Point(x2,y2),r2)
+        intersection = c1.intersection(c2)
+        if len(intersection) == 1:
+            intersection.append(intersection[0])
+        p1 = intersection[0]
+        p2 = intersection[1]
+        xs1,ys1 = p1.x,p1.y
+        xs2,ys2 = p2.x,p2.y
+        return (xs1,ys1),(xs2,ys2)
+
+""" 
+Interaction in the sagemath cell
+""" 
+@interact
+def VmA(nipple_x=(1,1.7)):
+    # recommended values for r = 1 : x=(1, 1.5+) 
+    var ('u,v,w,x,y,z')
+    var ('breastarc_x,nipple_x,nipple_y')
+
+    #presentation parameters 
+    showmaths = True #print maths
+    showinvisible = True    #Above and beyond breast, print curves in dotted line
+    thk = 2 # thickness of the visible
+    wi = 5 # width of the frame 
+
+    #geometry parameters
+    r = 1                   # Versiera radius 
+    d=2*r                   # Versiera diameter
+    ptinf= (2*r)/sqrt(3)    # Versiera positive point of inflexion
+    breastarc_r=0.9         # breast circle radius
+    areo_ratio=4.4          # ratio breast circle / areola circle
+
+    # Versiera curve
+    versiera = 8*(r^3)/((x^2) + 4*(r^2)) 
+ 
+    # Versiera curve (parametric)
+    t= var ('t')
+    xvp = d*t
+    yvp = d/(t^2+1)
+    #W=parametric_plot((xvp,yvp-r),(t,0,1))
+
+    # Find the y coordinate of the target intersection between versiera and breast arc when x = nipple_x
+    nipple_y = 8*(r^3)/((nipple_x^2) + 4*(r^2))  
+
+    # Plot versiera from offset to nipple_x (heigth is shifted down 0.5 by subtracting the radius).
+    offset=r-breastarc_r
+    P=plot(versiera-r,offset+0.12,nipple_x,fill=0,rgbcolor="black",fillcolor='white',thickness=thk) 
+    S=P
+    
+    # Find the x coordinate of the center of a circle with radius breastarc_r to which belongs point (nipple_x, nipple_y)
+    eqdelta = (nipple_y-r)^2 + z^2 == breastarc_r^2
+    soldelta = solve([eqdelta],z,solution_dict=True)
+    breastarc_x=nipple_x-soldelta[1][z]
+
+    # Areola as a circle of center (areo_x,areo_y) and radius areo_r
+    areo_r = nipple_x/ areo_ratio
+    areo_x = nipple_x 
+    areo_y = nipple_y-r
+
+    # Store the circles
+    tuplebreast= breastarc_x, 0, breastarc_r
+    tupleareo = areo_x, areo_y, areo_r
+
+    # Draw the breast arc 
+    var('m,n')
+    arcbreast = (m-breastarc_x)^2 + (n-0) ^2 == breastarc_r^2
+    U=implicit_plot(arcbreast, (m, offset,r*2), (n,-r,nipple_y-r),color='black',linewidth=thk)
+    S=S+U
+    
+    # Find areola low intersection point with circle
+    geom = Geometry()
+    getint = geom.circle_intersection(circle1=tuplebreast, circle2=tupleareo)
+    areoint_x = getint[0][0]
+
+    # Find areola intersection point with Versiera
+    function ('xt') (t)
+    function ('yt') (t)
+    function ('f') (t) 
+    function ('df') (t)
+    xt(t) = 2*t
+    yt(t) = d/(t^2+1)-r
+
+    f(t)= (xt(x=t)-areo_x)^2 + (yt(x=t)-areo_y)^2 - areo_r^2 
+    #st = solve([f(t) == 0],t) 
+    df(t) = f(x=t).derivative()
+   
+    # Use Newton-Raphson approximation  
+    var ('xstart')  
+    xstart=nipple_x/3.3
+    iter = 100
+    son = scipy.optimize.newton(f,xstart,df, maxiter= iter)
+    dyvp=(yt(son))
+
+    # Draw the areola circle between intersection points
+    var ('o,p')
+    arcareo = (o-areo_x)^2 + (p-areo_y)^2 == areo_r^2
+    V=implicit_plot(arcareo, (o,0,areoint_x), (p,-r,dyvp),color='black',linewidth=thk)  
+    S=S+V
+
+    # Draw the vertical line perpendicular to x axis at Versiera's positive point of inflexion 
+    L=line( [ (ptinf , -r), (ptinf, r) ], color="purple", thickness=1, linestyle="-.")
+    S=S+L
+
+    # Plot the whole shebang
+    if showinvisible :
+        IPV=plot(versiera-r,nipple_x,wi,fill=0,rgbcolor='black',fillcolor='white',linestyle='dotted') 
+        S=S+IPV
+        IPV2 = plot(versiera-r,-wi, offset+0.12,fill=0,rgbcolor='black',fillcolor='white',linestyle='dotted') 
+        S=S+IPV2
+        IPC = implicit_plot(arcbreast, (m, -r,r*2), (n,-r,r),color='black', linestyle='dotted')
+        S=S+IPC
+        IPA = implicit_plot(arcareo, (o,0,wi), (p,-0.5,1),color='black', linestyle='dotted')
+        S=S+IPA
+
+    S.show (axes=true,aspect_ratio=1) 
+    
+    if showmaths : 
+        show ('nipple coordinates :  x =  ', nipple_x, ' y =  ', nipple_y-r)
+        show ('areola / breast circle intersection coordinates : x =  ', areoint_x, ' y =   ', nipple_y-r)
+        show ('areola / Versiera intersection coordinates :  x =  ', xt(son), ' y =  ', dyvp)
+        show ('numerical resolution : ')
+        show ('      f(t) : ', f(t))
+        show ('      dérivée df(t) :  ', df)
+        show ('      t approximation for f(t) = 0 (Newton-Raphson method) :   ', son)
+        #show ('df(t) = 0 : ', st)  
+
+    return
+ </script>
+</div>
+  </body>
+</html>
